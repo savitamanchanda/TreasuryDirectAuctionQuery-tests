@@ -1,1 +1,3 @@
 obj/
+bin/
+Features/TreasuryDirectAuctionQuery.feature.cs
