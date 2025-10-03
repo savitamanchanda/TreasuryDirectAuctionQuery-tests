@@ -91,5 +91,40 @@ namespace TreasuryDirect.Reqnroll.Steps
                 );
             }
         }
+
+        //Request data in XHTML format
+
+        [When(
+            @"I make a GET request to search for ""(.*)"" securities with the format set to ""(.*)"""
+        )]
+        public async Task WhenISearchWithFormat(string type, string format)
+        {
+            var query = new Dictionary<string, string>
+            {
+                { "securityType", type },
+                { "format", format },
+            };
+            _response = await _client.CallApi(query);
+        }
+
+        [Then(@"the response ""Content-Type"" header should contain ""(.*)""")]
+        public void ThenContentTypeHeaderShouldContain(string expectedType)
+        {
+            var contentType = _response.Content.Headers.ContentType?.MediaType;
+            Assert.IsTrue(
+                contentType != null && contentType.Contains(expectedType),
+                $"Expected Content-Type to contain {expectedType}, but got {contentType}"
+            );
+        }
+
+        [Then(@"the response body should be valid XHTML")]
+        public async Task ThenResponseShouldBeValidXHTML()
+        {
+            var body = await _response.Content.ReadAsStringAsync();
+            Assert.IsTrue(
+                body.TrimStart().StartsWith("<!DOCTYPE html") || body.Contains("<html"),
+                "Expected XHTML content but found invalid or non-HTML body."
+            );
+        }
     }
 }

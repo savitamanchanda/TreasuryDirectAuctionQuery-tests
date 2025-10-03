@@ -15,4 +15,9 @@ Feature: Treasury Direct Securities API
     And the response body should be a non-empty JSON array
     And every security in the response array should have a "securityType" of "Note"
     And every security's "issueDate" should be within the requested date range
-
+    
+  Scenario: Request data in XHTML format
+    When I make a GET request to search for "Bond" securities with the format set to "xhtml"
+    Then the response status code should be 200
+    And the response "Content-Type" header should contain "application/xhtml+xml"
+    And the response body should be valid XHTML

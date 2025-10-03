@@ -17,14 +17,15 @@ namespace TreasuryDirect.Reqnroll.Support
 
         public async Task<HttpResponseMessage> CallApi(Dictionary<string, string> query)
         {
-            //Build query string and send GET request 
+            //Build query string and send GET request
             var qs = BuildQueryString(query);
             return await _http.GetAsync(qs);
         }
 
         private static string BuildQueryString(Dictionary<string, string> query)
         {
-            if (query == null || query.Count == 0) return "";
+            if (query == null || query.Count == 0)
+                return "";
             var parts = new List<string>();
             foreach (var kv in query)
             {
