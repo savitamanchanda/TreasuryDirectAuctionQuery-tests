@@ -126,5 +126,18 @@ namespace TreasuryDirect.Reqnroll.Steps
                 "Expected XHTML content but found invalid or non-HTML body."
             );
         }
+
+        //Invalid CUSIP
+
+        [Then(@"the response body should be an empty JSON array ""(.*)""")]
+        public async Task ThenResponseShouldBeAnEmptyJsonArray(string expectedBody)
+        {
+            var body = await _response.Content.ReadAsStringAsync();
+            Assert.AreEqual(
+                expectedBody.Trim(),
+                body.Trim(),
+                $"Expected an empty JSON array {expectedBody}, but got: {body}"
+            );
+        }
     }
 }

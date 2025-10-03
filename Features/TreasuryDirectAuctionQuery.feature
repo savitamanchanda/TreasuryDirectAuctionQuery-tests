@@ -21,3 +21,12 @@ Feature: Treasury Direct Securities API
     Then the response status code should be 200
     And the response "Content-Type" header should contain "application/xhtml+xml"
     And the response body should be valid XHTML
+
+  Scenario: Search for a CUSIP that does not exist
+    When I make a GET request with JSON format to the securities search endpoint with CUSIP "INVALIDCUSIP1"
+    Then the response status code should be 200
+    And the response body should be an empty JSON array "[]"
+
+
+
+
