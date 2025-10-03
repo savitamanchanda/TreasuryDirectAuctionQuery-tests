@@ -65,16 +65,16 @@ namespace TreasuryDirect.Reqnroll.Steps
         {
             var query = new Dictionary<string, string>
             {
-                { "securityType", type },
-                { "issueDateFrom", startDate },
-                { "issueDateTo", endDate },
+                { "type", type },
+                { "startDate", startDate },
+                { "endDate", endDate },
+                { "dateFieldName", "issueDate" },
                 { "format", "json" },
             };
 
             _response = await _client.CallApi(query);
         }
 
-        //This endpoint is returning securities out of the date range.
         [Then(@"every security's ""(.*)"" should be within the requested date range")]
         public async Task ThenIssueDateShouldBeWithinRange(string field)
         {
@@ -99,11 +99,7 @@ namespace TreasuryDirect.Reqnroll.Steps
         )]
         public async Task WhenISearchWithFormat(string type, string format)
         {
-            var query = new Dictionary<string, string>
-            {
-                { "securityType", type },
-                { "format", format },
-            };
+            var query = new Dictionary<string, string> { { "type", type }, { "format", format } };
             _response = await _client.CallApi(query);
         }
 
@@ -137,6 +133,35 @@ namespace TreasuryDirect.Reqnroll.Steps
                 expectedBody.Trim(),
                 body.Trim(),
                 $"Expected an empty JSON array {expectedBody}, but got: {body}"
+            );
+        }
+
+        //Invalid date format
+        [When(
+            @"I make a GET request to search for ""(.*)"" securities with a start date of ""(.*)"""
+        )]
+        public async Task WhenISearchWithInvalidDate(string type, string invalidDate)
+        {
+            var query = new Dictionary<string, string>
+            {
+                { "type", type },
+                { "startDate", invalidDate },
+                { "format", "json" },
+            };
+            _response = await _client.CallApi(query);
+        }
+
+        [Then(
+            @"the response body should contain an error message regarding the invalid date format"
+        )]
+        public async Task ThenInvalidDateErrorMessageIsReturned()
+        {
+            var body = await _response.Content.ReadAsStringAsync();
+
+            Assert.IsTrue(
+                body.Contains("Bad Request", StringComparison.OrdinalIgnoreCase)
+                    || body.Contains("400", StringComparison.OrdinalIgnoreCase),
+                $"Expected a 400 Bad Request error message, but got: {body}"
             );
         }
     }

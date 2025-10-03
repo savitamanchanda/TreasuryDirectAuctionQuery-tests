@@ -27,6 +27,8 @@ Feature: Treasury Direct Securities API
     Then the response status code should be 200
     And the response body should be an empty JSON array "[]"
 
-
-
+  Scenario: Search with an invalid date format
+    When I make a GET request to search for "Bill" securities with a start date of "01-01-2024"
+    Then the response status code should be 400
+    And the response body should contain an error message regarding the invalid date format
 
