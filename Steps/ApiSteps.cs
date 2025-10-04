@@ -164,5 +164,26 @@ namespace TreasuryDirect.Reqnroll.Steps
                 $"Expected a 400 Bad Request error message, but got: {body}"
             );
         }
+
+        //Original Note Securities
+        [When(
+            @"I search for ""(.*)"" securities between ""(.*)"" and ""(.*)"" with reopening ""(.*)"""
+        )]
+        public async Task WhenISearchForOriginalSecurities(
+            string type,
+            string startDate,
+            string endDate,
+            string reopening
+        )
+        {
+            var query = new Dictionary<string, string>
+            {
+                { "type", type },
+                { "startDate", startDate },
+                { "endDate", endDate },
+                { "reopening", reopening },
+            };
+            _response = await _client.CallApi(query);
+        }
     }
 }

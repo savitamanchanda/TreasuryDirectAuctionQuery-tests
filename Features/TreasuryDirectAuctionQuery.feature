@@ -32,3 +32,7 @@ Feature: Treasury Direct Securities API
     Then the response status code should be 400
     And the response body should contain an error message regarding the invalid date format
 
+Scenario: Search for original note securities
+    When I search for "Note" securities between "01/01/2023" and "12/31/2023" with reopening "No"
+    Then the response status code should be 200
+    And every security in the response array should have a "reopening" of "No"
