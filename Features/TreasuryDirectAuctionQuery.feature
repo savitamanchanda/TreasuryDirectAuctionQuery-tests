@@ -36,3 +36,8 @@ Scenario: Search for original note securities
     When I search for "Note" securities between "01/01/2023" and "12/31/2023" with reopening "No"
     Then the response status code should be 200
     And every security in the response array should have a "reopening" of "No"
+
+Scenario: Verify pagination parameters return distinct results
+   When I make a GET request with JSON format to search for "Bill" securities using pagesize "2" and pagenum "1"
+   And I make a GET request with JSON format to search for "Bill" securities using pagesize "2" and pagenum "2"
+   Then the response from page 1 and page 2 should not be identical

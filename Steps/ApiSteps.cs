@@ -185,5 +185,43 @@ namespace TreasuryDirect.Reqnroll.Steps
             };
             _response = await _client.CallApi(query);
         }
+
+        //Verify pagination parameters for distinct results
+        private JArray _page1results;
+        private JArray _page2results;
+
+        [When(
+            @"I make a GET request with JSON format to search for ""(.*)"" securities using pagesize ""(.*)"" and pagenum ""(.*)"""
+        )]
+        public async Task WhenIVerifyPaginationParameters(
+            string type,
+            string pagesize,
+            string pagenum
+        )
+        {
+            var query = new Dictionary<string, string>
+            {
+                { "type", type },
+                { "pagesize", pagesize },
+                { "pagenum", pagenum },
+            };
+            _response = await _client.CallApi(query);
+            var body = await _response.Content.ReadAsStringAsync();
+
+            if (pagenum == "1")
+                _page1results = JArray.Parse(body);
+            else
+                _page2results = JArray.Parse(body);
+        }
+
+        [Then(@"the response from page 1 and page 2 should not be identical")]
+        public async Task ThenResponseShouldNotBeIdentical()
+        {
+            Assert.AreNotEqual(
+                _page1results.ToString(),
+                _page2results.ToString(),
+                "Expected page 1 and page 2 responses to differ, but they were identical."
+            );
+        }
     }
 }
