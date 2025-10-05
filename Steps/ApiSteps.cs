@@ -12,7 +12,7 @@ namespace TreasuryDirect.Reqnroll.Steps
     public class ApiSteps
     {
         private readonly ApiClient _client;
-        private HttpResponseMessage _response;
+        private HttpResponseMessage? _response;
 
         public ApiSteps()
         {
@@ -34,26 +34,30 @@ namespace TreasuryDirect.Reqnroll.Steps
         [Then(@"the response status code should be (.*)")]
         public void ThenStatusCodeShouldBe(int expectedStatus)
         {
-            Assert.AreEqual(expectedStatus, (int)_response.StatusCode);
+            Assert.That((int)_response!.StatusCode, Is.EqualTo(expectedStatus));
         }
 
         [Then(@"the response body should be a non-empty JSON array")]
         public async Task ThenResponseShouldBeNonEmptyArray()
         {
-            var body = await _response.Content.ReadAsStringAsync();
+            var body = await _response!.Content.ReadAsStringAsync();
             var json = JArray.Parse(body);
-            Assert.IsTrue(json.Count > 0, "Expected non-empty JSON array, but got empty");
+            Assert.That(
+                json.Count,
+                Is.GreaterThan(0),
+                "Expected non-empty JSON array, but got empty"
+            );
         }
 
         [Then(@"every security in the response array should have a ""(.*)"" of ""(.*)""")]
         public async Task ThenAllSecuritiesShouldMatch(string field, string value)
         {
-            var body = await _response.Content.ReadAsStringAsync();
+            var body = await _response!.Content.ReadAsStringAsync();
             var json = JArray.Parse(body);
 
             foreach (var sec in json)
             {
-                Assert.AreEqual(value, sec[field]?.ToString());
+                Assert.That(sec[field]?.ToString(), Is.EqualTo(value));
             }
         }
 
@@ -78,15 +82,18 @@ namespace TreasuryDirect.Reqnroll.Steps
         [Then(@"every security's ""(.*)"" should be within the requested date range")]
         public async Task ThenIssueDateShouldBeWithinRange(string field)
         {
-            var body = await _response.Content.ReadAsStringAsync();
+            var body = await _response!.Content.ReadAsStringAsync();
             var json = JArray.Parse(body);
 
             foreach (var sec in json)
             {
-                var issueDate = DateTime.Parse(sec[field]?.ToString());
-                Assert.IsTrue(
-                    issueDate >= DateTime.Parse("01/01/2024")
-                        && issueDate <= DateTime.Parse("03/31/2024"),
+                if (sec[field] == null)
+                    Assert.Fail($"Field {field} is missing or null in one of the securities.");
+
+                var issueDate = DateTime.Parse(sec[field]!.ToString());
+                Assert.That(
+                    issueDate,
+                    Is.InRange(DateTime.Parse("01/01/2024"), DateTime.Parse("03/31/2024")),
                     $"Issue date {issueDate} is outside expected range."
                 );
             }
@@ -106,9 +113,10 @@ namespace TreasuryDirect.Reqnroll.Steps
         [Then(@"the response ""Content-Type"" header should contain ""(.*)""")]
         public void ThenContentTypeHeaderShouldContain(string expectedType)
         {
-            var contentType = _response.Content.Headers.ContentType?.MediaType;
-            Assert.IsTrue(
-                contentType != null && contentType.Contains(expectedType),
+            var contentType = _response!.Content.Headers.ContentType?.MediaType;
+            Assert.That(
+                contentType,
+                Is.Not.Null.And.Contains(expectedType),
                 $"Expected Content-Type to contain {expectedType}, but got {contentType}"
             );
         }
@@ -116,9 +124,10 @@ namespace TreasuryDirect.Reqnroll.Steps
         [Then(@"the response body should be valid XHTML")]
         public async Task ThenResponseShouldBeValidXHTML()
         {
-            var body = await _response.Content.ReadAsStringAsync();
-            Assert.IsTrue(
-                body.TrimStart().StartsWith("<!DOCTYPE html") || body.Contains("<html"),
+            var body = await _response!.Content.ReadAsStringAsync();
+            Assert.That(
+                body.TrimStart(),
+                Does.StartWith("<!DOCTYPE html").Or.Contains("<html"),
                 "Expected XHTML content but found invalid or non-HTML body."
             );
         }
@@ -128,10 +137,10 @@ namespace TreasuryDirect.Reqnroll.Steps
         [Then(@"the response body should be an empty JSON array ""(.*)""")]
         public async Task ThenResponseShouldBeAnEmptyJsonArray(string expectedBody)
         {
-            var body = await _response.Content.ReadAsStringAsync();
-            Assert.AreEqual(
-                expectedBody.Trim(),
+            var body = await _response!.Content.ReadAsStringAsync();
+            Assert.That(
                 body.Trim(),
+                Is.EqualTo(expectedBody.Trim()),
                 $"Expected an empty JSON array {expectedBody}, but got: {body}"
             );
         }
@@ -156,11 +165,10 @@ namespace TreasuryDirect.Reqnroll.Steps
         )]
         public async Task ThenInvalidDateErrorMessageIsReturned()
         {
-            var body = await _response.Content.ReadAsStringAsync();
-
-            Assert.IsTrue(
-                body.Contains("Bad Request", StringComparison.OrdinalIgnoreCase)
-                    || body.Contains("400", StringComparison.OrdinalIgnoreCase),
+            var body = await _response!.Content.ReadAsStringAsync();
+            Assert.That(
+                body,
+                Does.Contain("Bad Request").IgnoreCase.Or.Contains("400"),
                 $"Expected a 400 Bad Request error message, but got: {body}"
             );
         }
@@ -182,13 +190,14 @@ namespace TreasuryDirect.Reqnroll.Steps
                 { "startDate", startDate },
                 { "endDate", endDate },
                 { "reopening", reopening },
+                { "format", "json" },
             };
             _response = await _client.CallApi(query);
         }
 
         //Verify pagination parameters for distinct results
-        private JArray _page1results;
-        private JArray _page2results;
+        private JArray? _page1results;
+        private JArray? _page2results;
 
         [When(
             @"I make a GET request with JSON format to search for ""(.*)"" securities using pagesize ""(.*)"" and pagenum ""(.*)"""
@@ -204,6 +213,7 @@ namespace TreasuryDirect.Reqnroll.Steps
                 { "type", type },
                 { "pagesize", pagesize },
                 { "pagenum", pagenum },
+                { "format", "json" },
             };
             _response = await _client.CallApi(query);
             var body = await _response.Content.ReadAsStringAsync();
@@ -215,13 +225,9 @@ namespace TreasuryDirect.Reqnroll.Steps
         }
 
         [Then(@"the response from page 1 and page 2 should not be identical")]
-        public async Task ThenResponseShouldNotBeIdentical()
+        public void ThenResponseShouldNotBeIdentical()
         {
-            Assert.AreNotEqual(
-                _page1results.ToString(),
-                _page2results.ToString(),
-                "Expected page 1 and page 2 responses to differ, but they were identical."
-            );
+            Assert.That(_page1results!.ToString(), Is.Not.EqualTo(_page2results!.ToString()));
         }
     }
 }
